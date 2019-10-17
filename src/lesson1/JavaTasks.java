@@ -113,7 +113,7 @@ public class JavaTasks {
             e.printStackTrace();
         }
     }
-    // Оценка сложности: O(nlogn), т.к. самая длительная операция - mergeSort, имеющая именно такую сложность
+    // Оценка сложности: O(n*log(n)), т.к. самая длительная операция - mergeSort, имеющая именно такую сложность
 
     /**
      * Сортировка адресов
@@ -151,6 +151,11 @@ public class JavaTasks {
                         "([А-ЯЁA-Z][а-яёa-z]+-?([А-ЯЁA-Z][а-яёa-z]+)? ){2}- ([А-ЯЁA-Z][а-яёa-z]+-?([А-ЯЁA-Z][а-яёa-z]+)? )\\d+")) {
                     throw new IllegalArgumentException();
                 }
+
+                // RegEx написано так, чтобы удовлевтворять всем случаям, встречающимся в тестовых файлах,
+                // однако такие входные данные, как ШпалернаяАвраам или РалфЭддингтон (притом в "Ралф" использована
+                // латинская "a") я лично не считаю верными. Так что, как я считаю верное RegEx должно быть,
+                // например, таким: ([А-ЯЁ][а-яё]+(-[А-ЯЁ][а-яё]+)? ){2}- ([А-ЯЁ][а-яё]+(-[А-ЯЁ][а-яё]+)? )\\d+
 
                 String[] splitLine = line.split(" - ");
                 String nameAndSurname = splitLine[0];
@@ -196,6 +201,10 @@ public class JavaTasks {
             e.printStackTrace();
         }
     }
+    // Сложность алгоритма O(l*a*log(a)+k*n*log(n)), где l - максимальное количество букв в адресе, k - максимальное
+    // количество букв в имени, a - количество уникальных адресов. В случае, когда в каждом доме живёт лишь по одному
+    // человеку, имена не будут нуждаться в сортировке, и формула превратится в O(l*n*log(n)); в среднем случае n>>a, и
+    // первое слагаемое оказывается поглощено, так что формула превращается в O(k*n*log(n)).
 
     /**
      * Сортировка температур
@@ -310,6 +319,8 @@ public class JavaTasks {
             e.printStackTrace();
         }
     }
+    // Библиотечная операция containsKey работает за O(log(n)), весь остальной код умещается в одном цикле, так что
+    // сложность алгоритма O(n*log(n)).
 
     /**
      * Соединить два отсортированных массива в один
@@ -326,6 +337,19 @@ public class JavaTasks {
      * Результат: second = [1 3 4 9 9 13 15 20 23 28]
      */
     static <T extends Comparable<T>> void mergeArrays(T[] first, T[] second) {
-        throw new NotImplementedError();
+        T[] filledSecond = Arrays.copyOfRange(second, first.length, second.length);
+        int firstIndex = 0;
+        int filledIndex = 0;
+
+        for (int i = 0; i < second.length; i++) {
+            if (firstIndex == first.length ||
+                    filledIndex < filledSecond.length && filledSecond[filledIndex].compareTo(first[firstIndex]) < 0) {
+                second[i] = filledSecond[filledIndex++];
+            } else {
+                second[i] = first[firstIndex++];
+            }
+        }
     }
+
+    // Сложность алгоритма O(n).
 }
