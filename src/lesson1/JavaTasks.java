@@ -2,8 +2,18 @@ package lesson1;
 
 import kotlin.NotImplementedError;
 
+import java.io.IOException;
+import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.*;
+
 @SuppressWarnings("unused")
 public class JavaTasks {
+
+    private static final int SEC_IN_MIN = 60;
+    private static final int MIN_IN_HR = 60;
+    private static final int SEC_IN_HR = SEC_IN_MIN * MIN_IN_HR;
     /**
      * Сортировка времён
      *
@@ -34,9 +44,76 @@ public class JavaTasks {
      *
      * В случае обнаружения неверного формата файла бросить любое исключение.
      */
-    static public void sortTimes(String inputName, String outputName) {
-        throw new NotImplementedError();
+     public static void sortTimes(String inputName, String outputName) {
+        try {
+            ArrayList<String> fileContent = (ArrayList<String>) Files.readAllLines(Paths.get(inputName));
+
+            int[] timeInRawSeconds = new int[fileContent.size()];
+
+            for (int i = 0; i < fileContent.size(); i++) {
+                String line = fileContent.get(i);
+                if (!line.matches("\\d{2}:\\d{2}:\\d{2} [A,P]M")) {
+                    throw new IllegalArgumentException();
+                }
+
+                int hours = Integer.parseInt(line.substring(0, 2));
+                if (hours > 12 || hours < 1) {
+                    throw new IllegalArgumentException();
+                }
+                int minutes = Integer.parseInt(line.substring(3, 5));
+                if (minutes > 59 || minutes < 0) {
+                    throw new IllegalArgumentException();
+                }
+                int seconds = Integer.parseInt(line.substring(6, 8));
+                if (seconds > 59 || seconds < 0) {
+                    throw new IllegalArgumentException();
+                }
+
+                if (line.endsWith("AM")) {
+                    if (!line.startsWith("12")) {
+                        timeInRawSeconds[i] = SEC_IN_HR * hours + SEC_IN_MIN * minutes + seconds;
+                    } else {
+                        timeInRawSeconds[i] = SEC_IN_MIN * minutes + seconds;
+                    }
+                } else {
+                    if (!line.startsWith("12")) {
+                        timeInRawSeconds[i] =  SEC_IN_HR * (12 + hours) + SEC_IN_MIN * minutes + seconds;
+                    } else {
+                        timeInRawSeconds[i] = SEC_IN_HR * hours + SEC_IN_MIN * minutes + seconds;
+                    }
+                }
+            }
+
+            Util.mergeSortInt(timeInRawSeconds, 0, timeInRawSeconds.length);
+
+            ArrayList<String> result = new ArrayList<>();
+            for (int time : timeInRawSeconds) {
+                int hours = time / SEC_IN_HR;
+                int minutes = time % SEC_IN_HR / SEC_IN_MIN;
+                int seconds = time % SEC_IN_HR % SEC_IN_MIN;
+
+                String marker = "AM";
+
+                if (hours == 0) {
+                    hours = 12;
+                } else {
+                    if (hours >= 12) {
+                        marker = "PM";
+                        if (hours > 12) {
+                            hours -= 12;
+                        }
+                    }
+                }
+
+                result.add(String.format("%02d:%02d:%02d %s", hours, minutes, seconds, marker));
+            }
+
+            Files.write(Paths.get(outputName), result, Charset.defaultCharset());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
+    // Оценка сложности: O(nlogn), т.к. самая длительная операция - mergeSort, имеющая именно такую сложность
 
     /**
      * Сортировка адресов
@@ -65,7 +142,59 @@ public class JavaTasks {
      * В случае обнаружения неверного формата файла бросить любое исключение.
      */
     static public void sortAddresses(String inputName, String outputName) {
-        throw new NotImplementedError();
+        try {
+            ArrayList<String> fileContent = (ArrayList<String>) Files.readAllLines(Paths.get(inputName));
+
+            HashMap<String, ArrayList<String>> inhabitantsByHouses = new HashMap<>();
+            for (String line: fileContent) {
+                if (!line.matches(
+                        "([А-ЯЁA-Z][а-яёa-z]+-?([А-ЯЁA-Z][а-яёa-z]+)? ){2}- ([А-ЯЁA-Z][а-яёa-z]+-?([А-ЯЁA-Z][а-яёa-z]+)? )\\d+")) {
+                    throw new IllegalArgumentException();
+                }
+
+                String[] splitLine = line.split(" - ");
+                String nameAndSurname = splitLine[0];
+                String address = splitLine[1];
+                if (inhabitantsByHouses.containsKey(address)) {
+                    inhabitantsByHouses.get(address).add(nameAndSurname);
+                } else {
+                    inhabitantsByHouses.put(address, new ArrayList<>(Collections.singletonList(nameAndSurname)));
+                }
+            }
+
+            HouseWithInhabitants[] toSortByAddress = new HouseWithInhabitants[inhabitantsByHouses.size()];
+            int index = 0;
+            for (Map.Entry<String, ArrayList<String>> entry: inhabitantsByHouses.entrySet()) {
+                String[] addrSplit = entry.getKey().split(" ");
+                Address address = new Address(addrSplit[0], Integer.parseInt(addrSplit[1]));
+                toSortByAddress[index] = new HouseWithInhabitants(address, entry.getValue());
+                index++;
+            }
+
+            Util.mergeSortByAddress(toSortByAddress, 0, toSortByAddress.length);
+
+            ArrayList<String> result = new ArrayList<>();
+
+            for (HouseWithInhabitants hwi: toSortByAddress) {
+                StringBuilder builder = new StringBuilder();
+                builder.append(hwi.address.street).append(" ").append(hwi.address.house).append(" - ");
+                String[] inhS = new String[hwi.inhabitants.size()];
+                hwi.inhabitants.toArray(inhS);
+                Util.mergeSortString(inhS, 0, inhS.length);
+                for (int i = 0; i < inhS.length; i++) {
+                    builder.append(inhS[i]);
+                    if (i != inhS.length - 1) {
+                        builder.append(", ");
+                    }
+                }
+                result.add(builder.toString());
+            }
+
+            Files.write(Paths.get(outputName), result, Charset.defaultCharset());
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     /**
@@ -132,7 +261,54 @@ public class JavaTasks {
      * 2
      */
     static public void sortSequence(String inputName, String outputName) {
-        throw new NotImplementedError();
+        try {
+            ArrayList<String> fileContent = (ArrayList<String>) Files.readAllLines(Paths.get(inputName));
+
+            HashMap<Integer, Integer> amountsByNums = new HashMap<>();
+
+            int maxAmount = 0;
+            int smallestNumWithMaxAmount = 0;
+            ArrayList<Integer> nums = new ArrayList<>();
+
+            for (String line: fileContent) {
+                if (!line.matches("\\d+")) {
+                    throw new IllegalArgumentException();
+                }
+
+                int newAmount;
+                int num = Integer.parseInt(line);
+                nums.add(num);
+
+                if (amountsByNums.containsKey(num)) {
+                    newAmount = amountsByNums.get(num) + 1;
+                    amountsByNums.put(num, newAmount);
+                } else {
+                    newAmount = 1;
+                    amountsByNums.put(num, 1);
+                }
+
+                if (newAmount > maxAmount || newAmount == maxAmount && num < smallestNumWithMaxAmount) {
+                    maxAmount = newAmount;
+                    smallestNumWithMaxAmount = num;
+                }
+            }
+
+            ArrayList<String> result = new ArrayList<>();
+
+            for (int n : nums) {
+                if (n != smallestNumWithMaxAmount) {
+                    result.add(String.valueOf(n));
+                }
+            }
+
+            for (int i = 0; i < maxAmount; i++) {
+                result.add(String.valueOf(smallestNumWithMaxAmount));
+            }
+
+            Files.write(Paths.get(outputName), result, Charset.defaultCharset());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     /**

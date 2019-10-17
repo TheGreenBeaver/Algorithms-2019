@@ -18,7 +18,7 @@ plugins {
 group 'ru.spbstu'
 version '19.0.1-SNAPSHOT'
 
-sourceCompatibility = 1.8
+sourceCompatibility = 11
 
 repositories {
     mavenCentral()
@@ -73,10 +73,10 @@ task kotoedRun(
     def testPackages = sourceSets['test'].java.srcDirs.stream()
             .flatMap {
                 dir -> Files.walk(dir.toPath())
-                            .map { it.toFile() }
-                            .filter { it.isDirectory() }
-                            .map { it.path }
-                            .map { it.substring(dir.path.length()) }
+                        .map { it.toFile() }
+                        .filter { it.isDirectory() }
+                        .map { it.path }
+                        .map { it.substring(dir.path.length()) }
             }
             .filter { !it.isEmpty() }
             .map { it.substring(1) }
