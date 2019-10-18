@@ -5,6 +5,7 @@ import kotlin.NotImplementedError;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Paths;
 import java.util.*;
 
@@ -197,8 +198,8 @@ public class JavaTasks {
 
             Files.write(Paths.get(outputName), result, Charset.defaultCharset());
 
-        } catch (IOException e) {
-            e.printStackTrace();
+        } catch (IOException ne) {
+            ne.printStackTrace();
         }
     }
     // Сложность алгоритма O(l*a*log(a)+k*n*log(n)), где l - максимальное количество букв в адресе, k - максимальное
@@ -237,8 +238,54 @@ public class JavaTasks {
      * 121.3
      */
     static public void sortTemperatures(String inputName, String outputName) {
-        throw new NotImplementedError();
+        try {
+            ArrayList<String> fileContent = (ArrayList<String>) Files.readAllLines(Paths.get(inputName));
+
+            int[] amountsOfPossibleTemps = new int[7731];
+
+            for (String line: fileContent) {
+                if (!line.matches("-?\\d+\\.\\d")) {
+                    throw new IllegalArgumentException();
+                }
+                double temp = Double.parseDouble(line);
+                if (temp > 500 || temp < -273) {
+                    throw new IllegalArgumentException();
+                }
+
+                int relative = (int)(temp * 10) + 2730;
+                amountsOfPossibleTemps[relative]++;
+            }
+
+            String[] result = new String[fileContent.size()];
+            int startIndex = 0;
+
+            for (int num = 0; num < 7731; num++) {
+                int amount = amountsOfPossibleTemps[num];
+
+                if (amount > 0) {
+                    int realNum = num - 2730;
+                    boolean negative = realNum < 0;
+                    int integerPart = Math.abs(realNum / 10);
+                    int mantissa = Math.abs(realNum % 10);
+
+                    StringBuilder toAdd = new StringBuilder();
+                    if (negative) {
+                        toAdd.append("-");
+                    }
+                    toAdd.append(integerPart).append(".").append(mantissa);
+
+                    Arrays.fill(result, startIndex, startIndex + amount, toAdd.toString());
+                    startIndex += amount;
+                }
+            }
+
+            Files.write(Paths.get(outputName), Arrays.asList(result), Charset.defaultCharset());
+
+        } catch(IOException e) {
+            e.printStackTrace();
+        }
     }
+    // Сложность алгоритма O(n).
 
     /**
      * Сортировка последовательности

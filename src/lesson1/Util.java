@@ -32,35 +32,6 @@ class Util {
         mergeInt(initialArray, left, middle, right);
     }
 
-    private static void mergeDouble(double[] initialArray, int left, int middle, int right) {
-        double[] leftPart = Arrays.copyOfRange(initialArray, left, middle);
-        double[] rightPart = Arrays.copyOfRange(initialArray, middle, right);
-
-        int leftIndex = 0;
-        int rightIndex = 0;
-
-        for (int i = left; i < right; i++) {
-            if (leftIndex == leftPart.length ||
-                    (rightIndex < rightPart.length && leftPart[leftIndex] > rightPart[rightIndex])) {
-                initialArray[i] = rightPart[rightIndex++];
-            } else {
-                initialArray[i] = leftPart[leftIndex++];
-            }
-        }
-    }
-
-    static void mergeSortDouble(double[] initialArray, int left, int right) {
-        if (right - left == 1) {
-            return;
-        }
-
-        int middle = (left + right) / 2;
-
-        mergeSortDouble(initialArray, left, middle);
-        mergeSortDouble(initialArray, middle, right);
-        mergeDouble(initialArray, left, middle, right);
-    }
-
     static String alphabeticallyFirstString(String first, String second, int index) {
 
         if (first.equals(second)) {

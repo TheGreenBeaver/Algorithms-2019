@@ -6,6 +6,8 @@ import util.PerfResult
 import util.estimate
 import java.io.BufferedWriter
 import java.io.File
+import java.io.IOException
+import java.nio.file.NoSuchFileException
 import java.util.*
 import kotlin.math.abs
 import kotlin.system.measureNanoTime
@@ -72,6 +74,7 @@ abstract class AbstractTaskTests : AbstractFileTests() {
             File("temp.txt").delete()
         }
 
+        // My tests
         assertThrows(IllegalArgumentException::class.java) { sortTimes("input/time_in5.txt", "temp.txt") }
         assertThrows(IllegalArgumentException::class.java) { sortTimes("input/time_in6.txt", "temp.txt") }
         assertThrows(IllegalArgumentException::class.java) { sortTimes("input/time_in7.txt", "temp.txt") }
@@ -103,6 +106,11 @@ abstract class AbstractTaskTests : AbstractFileTests() {
         } finally {
             File("temp.txt").delete()
         }
+
+        // My tests
+        assertThrows(IllegalArgumentException::class.java) { sortAddresses("input/addr_in4.txt", "temp.txt") }
+        assertThrows(IllegalArgumentException::class.java) { sortAddresses("input/addr_in5.txt", "temp.txt") }
+        assertThrows(IllegalArgumentException::class.java) { sortAddresses("input/addr_in6.txt", "temp.txt") }
     }
 
     private fun generateTemperatures(size: Int): PerfResult<Unit> {
@@ -167,6 +175,9 @@ abstract class AbstractTaskTests : AbstractFileTests() {
         }
 
         println("sortTemperatures: $perf")
+
+        // My tests
+        assertThrows(IllegalArgumentException::class.java) { sortTemperatures("input/temp_in2.txt", "temp.txt") }
     }
 
     private fun generateSequence(totalSize: Int, answerSize: Int): PerfResult<Unit> {
@@ -326,6 +337,9 @@ abstract class AbstractTaskTests : AbstractFileTests() {
         }
 
         println("sortSequence: $perf")
+
+        // My tests
+        assertThrows(IllegalArgumentException::class.java) { sortSequence("input/seq_in6.txt", "temp.txt") }
     }
 
     private fun generateArrays(

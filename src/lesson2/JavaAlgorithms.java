@@ -3,6 +3,7 @@ package lesson2;
 import kotlin.NotImplementedError;
 import kotlin.Pair;
 
+import java.util.ArrayList;
 import java.util.Set;
 
 @SuppressWarnings("unused")
@@ -85,8 +86,54 @@ public class JavaAlgorithms {
      * но приветствуется попытка решить её самостоятельно.
      */
     static public int josephTask(int menNumber, int choiceInterval) {
+//        boolean[] excluded = new boolean[menNumber];
+//        int[] whereToGoIfExcluded = new int[menNumber];
+//
+//        for (int i = 0; i < menNumber; i++) {
+//            if (i == menNumber - 1) {
+//                whereToGoIfExcluded[i] = 0;
+//            } else {
+//                whereToGoIfExcluded[i] = i + 1;
+//            }
+//        }
+//
+//        int currentMan = -1;
+//        int currentMenNumber = menNumber;
+//        int step;
+//        int tryToGo;
+//        int change;
+//
+//        while (currentMenNumber > 1) {
+//            step = choiceInterval % currentMenNumber;
+//
+//            tryToGo = (step != 0) ? (currentMan + step) : ((currentMan == 0) ? menNumber - 1 : currentMan - 1);
+//            if (tryToGo >= menNumber) {
+//                tryToGo -= menNumber;
+//            }
+//
+//            currentMan = (!excluded[tryToGo]) ? tryToGo : whereToGoIfExcluded[tryToGo];
+//
+//            change = (currentMan != 0) ? (currentMan - 1) : (menNumber - 1);
+//            excluded[currentMan] = true;
+//
+//            whereToGoIfExcluded[change] = whereToGoIfExcluded[currentMan];
+//            currentMenNumber--;
+//        }
+//
+//        int ans = 0;
+//        for (int i = 0; i < menNumber; i++) {
+//            if (!excluded[i]) {
+//                ans = i + 1;
+//                break;
+//            }
+//        }
+//        return ans;
         throw new NotImplementedError();
     }
+
+//    public static void main(String[] args) {
+//        System.out.println(josephTask(8, 5));
+//    }
 
     /**
      * Наибольшая общая подстрока.
