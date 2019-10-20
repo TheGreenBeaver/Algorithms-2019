@@ -48,8 +48,10 @@ public class JavaTasks {
      public static void sortTimes(String inputName, String outputName) {
         try {
             ArrayList<String> fileContent = (ArrayList<String>) Files.readAllLines(Paths.get(inputName));
-
             int[] timeInRawSeconds = new int[fileContent.size()];
+            int hours;
+            int minutes;
+            int seconds;
 
             for (int i = 0; i < fileContent.size(); i++) {
                 String line = fileContent.get(i);
@@ -57,42 +59,38 @@ public class JavaTasks {
                     throw new IllegalArgumentException();
                 }
 
-                int hours = Integer.parseInt(line.substring(0, 2));
+                hours = Integer.parseInt(line.substring(0, 2));
                 if (hours > 12 || hours < 1) {
                     throw new IllegalArgumentException();
                 }
-                int minutes = Integer.parseInt(line.substring(3, 5));
+                minutes = Integer.parseInt(line.substring(3, 5));
                 if (minutes > 59 || minutes < 0) {
                     throw new IllegalArgumentException();
                 }
-                int seconds = Integer.parseInt(line.substring(6, 8));
+                seconds = Integer.parseInt(line.substring(6, 8));
                 if (seconds > 59 || seconds < 0) {
                     throw new IllegalArgumentException();
                 }
 
-                if (line.endsWith("AM")) {
-                    if (!line.startsWith("12")) {
-                        timeInRawSeconds[i] = SEC_IN_HR * hours + SEC_IN_MIN * minutes + seconds;
-                    } else {
-                        timeInRawSeconds[i] = SEC_IN_MIN * minutes + seconds;
-                    }
-                } else {
-                    if (!line.startsWith("12")) {
-                        timeInRawSeconds[i] =  SEC_IN_HR * (12 + hours) + SEC_IN_MIN * minutes + seconds;
-                    } else {
-                        timeInRawSeconds[i] = SEC_IN_HR * hours + SEC_IN_MIN * minutes + seconds;
-                    }
-                }
+                timeInRawSeconds[i] = (line.endsWith("AM"))
+                        ? (
+                                (!line.startsWith("12")
+                                        ? (SEC_IN_HR * hours + SEC_IN_MIN * minutes + seconds)
+                                        : (SEC_IN_MIN * minutes + seconds)))
+                        : (
+                                (!line.startsWith("12")
+                                        ? (SEC_IN_HR * (12 + hours) + SEC_IN_MIN * minutes + seconds)
+                                        : (SEC_IN_HR * hours + SEC_IN_MIN * minutes + seconds)));
             }
 
             Util.mergeSortInt(timeInRawSeconds, 0, timeInRawSeconds.length);
 
             ArrayList<String> result = new ArrayList<>();
-            for (int time : timeInRawSeconds) {
-                int hours = time / SEC_IN_HR;
-                int minutes = time % SEC_IN_HR / SEC_IN_MIN;
-                int seconds = time % SEC_IN_HR % SEC_IN_MIN;
 
+            for (int time : timeInRawSeconds) {
+                hours = time / SEC_IN_HR;
+                minutes = time % SEC_IN_HR / SEC_IN_MIN;
+                seconds = time % SEC_IN_HR % SEC_IN_MIN;
                 String marker = "AM";
 
                 if (hours == 0) {
@@ -155,8 +153,8 @@ public class JavaTasks {
 
                 // RegEx написано так, чтобы удовлевтворять всем случаям, встречающимся в тестовых файлах,
                 // однако такие входные данные, как ШпалернаяАвраам или РалфЭддингтон (притом в "Ралф" использована
-                // латинская "a") я лично не считаю верными. Так что, как я считаю верное RegEx должно быть,
-                // например, таким: ([А-ЯЁ][а-яё]+(-[А-ЯЁ][а-яё]+)? ){2}- ([А-ЯЁ][а-яё]+(-[А-ЯЁ][а-яё]+)? )\\d+
+                // латинская "a") я лично не считаю верными. Так что я думаю, что правильнее было бы записать RegEx,
+                // например, так: ([А-ЯЁ][а-яё]+(-[А-ЯЁ][а-яё]+)? ){2}- ([А-ЯЁ][а-яё]+(-[А-ЯЁ][а-яё]+)? )\\d+
 
                 String[] splitLine = line.split(" - ");
                 String nameAndSurname = splitLine[0];
@@ -198,8 +196,8 @@ public class JavaTasks {
 
             Files.write(Paths.get(outputName), result, Charset.defaultCharset());
 
-        } catch (IOException ne) {
-            ne.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
     // Сложность алгоритма O(l*a*log(a)+k*n*log(n)), где l - максимальное количество букв в адресе, k - максимальное
@@ -243,30 +241,39 @@ public class JavaTasks {
 
             int[] amountsOfPossibleTemps = new int[7731];
 
+            double temp;
+            int relative;
+
             for (String line: fileContent) {
                 if (!line.matches("-?\\d+\\.\\d")) {
                     throw new IllegalArgumentException();
                 }
-                double temp = Double.parseDouble(line);
+                temp = Double.parseDouble(line);
                 if (temp > 500 || temp < -273) {
                     throw new IllegalArgumentException();
                 }
 
-                int relative = (int)(temp * 10) + 2730;
+                relative = (int)(temp * 10) + 2730;
                 amountsOfPossibleTemps[relative]++;
             }
 
             String[] result = new String[fileContent.size()];
             int startIndex = 0;
 
+            int realNum;
+            boolean negative;
+            int integerPart;
+            int mantissa;
+            int amount;
+
             for (int num = 0; num < 7731; num++) {
-                int amount = amountsOfPossibleTemps[num];
+                amount = amountsOfPossibleTemps[num];
 
                 if (amount > 0) {
-                    int realNum = num - 2730;
-                    boolean negative = realNum < 0;
-                    int integerPart = Math.abs(realNum / 10);
-                    int mantissa = Math.abs(realNum % 10);
+                    realNum = num - 2730;
+                    negative = realNum < 0;
+                    integerPart = Math.abs(realNum / 10);
+                    mantissa = Math.abs(realNum % 10);
 
                     StringBuilder toAdd = new StringBuilder();
                     if (negative) {
@@ -324,6 +331,9 @@ public class JavaTasks {
 
             int maxAmount = 0;
             int smallestNumWithMaxAmount = 0;
+            int newAmount;
+            int num;
+
             ArrayList<Integer> nums = new ArrayList<>();
 
             for (String line: fileContent) {
@@ -331,8 +341,7 @@ public class JavaTasks {
                     throw new IllegalArgumentException();
                 }
 
-                int newAmount;
-                int num = Integer.parseInt(line);
+                num = Integer.parseInt(line);
                 nums.add(num);
 
                 if (amountsByNums.containsKey(num)) {

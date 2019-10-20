@@ -3,6 +3,9 @@ package lesson2;
 import kotlin.NotImplementedError;
 import kotlin.Pair;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Set;
 
@@ -33,8 +36,59 @@ public class JavaAlgorithms {
      * В случае обнаружения неверного формата файла бросить любое исключение.
      */
     static public Pair<Integer, Integer> optimizeBuyAndSell(String inputName) {
-        throw new NotImplementedError();
+        try {
+            ArrayList<String> fileContent = (ArrayList<String>) Files.readAllLines(Paths.get(inputName));
+
+            int n = fileContent.size();
+
+            int[] prices = new int[n];
+            for (int i = 0; i < n; i++) {
+                String line = fileContent.get(i);
+                if (!line.matches("\\d+")) {
+                    throw new IllegalArgumentException();
+                }
+                prices[i] = Integer.parseInt(line);
+            }
+
+            int[] diffs = new int[n];
+            diffs[0] = 0;
+            for (int i = 1; i < n; i++) {
+                diffs[i] = prices[i] - prices[i - 1];
+            }
+
+            boolean[] added = new boolean[n];
+            int globalMax = 0;
+            int globalMaxEnd = 0;
+            int[] maxSumByThisTime = new int[n];
+            maxSumByThisTime[0] = 0;
+
+            for (int i = 1; i < prices.length; i++) {
+                int takeThisDay = maxSumByThisTime[i - 1] + diffs[i];
+
+                if (takeThisDay >= 0) {
+                    maxSumByThisTime[i] = takeThisDay;
+                    added[i] = true;
+                    if (globalMax < takeThisDay) {
+                        globalMax = takeThisDay;
+                        globalMaxEnd = i;
+                    }
+                }
+            }
+
+            int index = globalMaxEnd;
+            while (added[index]) {
+                index--;
+            }
+
+            return new Pair<>(index + 1, globalMaxEnd + 1);
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
+
+    // Сложность алгоритма O(n)
 
     /**
      * Задача Иосифа Флафия.
@@ -86,54 +140,23 @@ public class JavaAlgorithms {
      * но приветствуется попытка решить её самостоятельно.
      */
     static public int josephTask(int menNumber, int choiceInterval) {
-//        boolean[] excluded = new boolean[menNumber];
-//        int[] whereToGoIfExcluded = new int[menNumber];
-//
-//        for (int i = 0; i < menNumber; i++) {
-//            if (i == menNumber - 1) {
-//                whereToGoIfExcluded[i] = 0;
-//            } else {
-//                whereToGoIfExcluded[i] = i + 1;
-//            }
-//        }
-//
-//        int currentMan = -1;
-//        int currentMenNumber = menNumber;
-//        int step;
-//        int tryToGo;
-//        int change;
-//
-//        while (currentMenNumber > 1) {
-//            step = choiceInterval % currentMenNumber;
-//
-//            tryToGo = (step != 0) ? (currentMan + step) : ((currentMan == 0) ? menNumber - 1 : currentMan - 1);
-//            if (tryToGo >= menNumber) {
-//                tryToGo -= menNumber;
-//            }
-//
-//            currentMan = (!excluded[tryToGo]) ? tryToGo : whereToGoIfExcluded[tryToGo];
-//
-//            change = (currentMan != 0) ? (currentMan - 1) : (menNumber - 1);
-//            excluded[currentMan] = true;
-//
-//            whereToGoIfExcluded[change] = whereToGoIfExcluded[currentMan];
-//            currentMenNumber--;
-//        }
-//
-//        int ans = 0;
-//        for (int i = 0; i < menNumber; i++) {
-//            if (!excluded[i]) {
-//                ans = i + 1;
-//                break;
-//            }
-//        }
-//        return ans;
-        throw new NotImplementedError();
+
+        int n = 1;
+        int res = 1;
+
+        while (n < menNumber) {
+            res = (res + choiceInterval - 1) % ++n + 1;
+        }
+
+        return res;
     }
 
-//    public static void main(String[] args) {
-//        System.out.println(josephTask(8, 5));
-//    }
+    // Сложность алгоритма O(n)
+    // Решение взято с Википедии, т.к. сам я смог придумать только алгоритм, работающий за O(n*(n-1)/2)=O(n^2), и он
+    // не проходил тесты по времени. Очень бы хотелось узнать, как следовало аналитически выводить формулу
+    // joseph(n, choiceInterval) = (joseph(n - 1, choiceInterval) + choiceInterval - 1) % n + 1;
+    // решая самостоятельно, я не смог этого сделать, несмотря на то, что расписал таблицу, а на Википедии эта
+    // закономерность обозначена как "отчётливо видная в таблице".
 
     /**
      * Наибольшая общая подстрока.
@@ -146,9 +169,41 @@ public class JavaAlgorithms {
      * Если имеется несколько самых длинных общих подстрок одной длины,
      * вернуть ту из них, которая встречается раньше в строке first.
      */
-    static public String longestCommonSubstring(String firs, String second) {
-        throw new NotImplementedError();
+    static public String longestCommonSubstring(String first, String second) {
+
+        int[][] matrix = new int[first.length()][second.length()];
+        int maxLength = 0;
+        int maxEndX = 0;
+        int maxEndY = 0;
+
+        for (int i = 0; i < first.length(); i++) {
+            for (int j = 0; j < second.length(); j++) {
+                if (first.charAt(i) == second.charAt((j))) {
+                    matrix[i][j] = (i == 0 || j == 0) ? 1 : (matrix[i - 1][j - 1] + 1);
+                    if (matrix[i][j] > maxLength) {
+                        maxLength = matrix[i][j];
+                        maxEndX = i;
+                        maxEndY = j;
+                    }
+                }
+            }
+        }
+
+        ArrayList<String> letters = new ArrayList<>();
+        while (maxEndX >= 0 && maxEndY >= 0 && matrix[maxEndX][maxEndY] != 0) {
+            letters.add(String.valueOf(first.charAt(maxEndX--)));
+            maxEndY--;
+        }
+
+        StringBuilder result = new StringBuilder();
+        for (int i = letters.size() - 1; i >= 0; i--) {
+            result.append(letters.get(i));
+        }
+
+        return result.toString();
     }
+
+    // Сложность алогоритма O(first.length() * second.length())
 
     /**
      * Число простых чисел в интервале

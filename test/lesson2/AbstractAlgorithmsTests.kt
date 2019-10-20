@@ -1,5 +1,6 @@
 package lesson2
 
+import org.junit.jupiter.api.Assertions
 import java.io.BufferedWriter
 import java.io.File
 import java.util.*
@@ -58,6 +59,10 @@ abstract class AbstractAlgorithmsTests {
         } finally {
             File("temp_prices.txt").delete()
         }
+
+        // My tests
+        Assertions.assertThrows(IllegalArgumentException::class.java) { optimizeBuyAndSell("input/buysell_in4.txt") }
+        Assertions.assertThrows(IllegalArgumentException::class.java) { optimizeBuyAndSell("input/buysell_in5.txt") }
     }
 
     fun josephTask(josephTask: (Int, Int) -> Int) {
@@ -71,6 +76,9 @@ abstract class AbstractAlgorithmsTests {
             assertEquals(1, josephTask(menNumber, 2))
             menNumber *= 2
         }
+
+        // My tests
+        assertEquals(2, josephTask(10, 50))
     }
 
     fun longestCommonSubstring(longestCommonSubstring: (String, String) -> String) {
@@ -120,6 +128,9 @@ abstract class AbstractAlgorithmsTests {
                 File("input/ruslan_ludmila_2.txt").readText()
             ).trim()
         )
+
+        // My tests
+        assertEquals("спир", longestCommonSubstring("спиритический", "конспираторский"))
     }
 
     fun calcPrimesNumber(calcPrimesNumber: (Int) -> Int) {
