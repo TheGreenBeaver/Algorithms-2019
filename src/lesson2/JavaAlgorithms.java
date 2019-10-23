@@ -6,8 +6,7 @@ import kotlin.Pair;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Set;
+import java.util.*;
 
 @SuppressWarnings("unused")
 public class JavaAlgorithms {
@@ -50,37 +49,29 @@ public class JavaAlgorithms {
                 prices[i] = Integer.parseInt(line);
             }
 
-            int[] diffs = new int[n];
-            diffs[0] = 0;
-            for (int i = 1; i < n; i++) {
-                diffs[i] = prices[i] - prices[i - 1];
-            }
-
-            boolean[] added = new boolean[n];
             int globalMax = 0;
             int globalMaxEnd = 0;
+            int globalMaxStart = 0;
+            int currentStart = 0;
             int[] maxSumByThisTime = new int[n];
             maxSumByThisTime[0] = 0;
 
-            for (int i = 1; i < prices.length; i++) {
-                int takeThisDay = maxSumByThisTime[i - 1] + diffs[i];
+            for (int i = 1; i < n; i++) {
+                int takeThisDay = maxSumByThisTime[i - 1] + prices[i] - prices[i - 1];
 
                 if (takeThisDay >= 0) {
                     maxSumByThisTime[i] = takeThisDay;
-                    added[i] = true;
                     if (globalMax < takeThisDay) {
                         globalMax = takeThisDay;
                         globalMaxEnd = i;
+                        globalMaxStart = currentStart;
                     }
+                } else {
+                    currentStart = i;
                 }
             }
 
-            int index = globalMaxEnd;
-            while (added[index]) {
-                index--;
-            }
-
-            return new Pair<>(index + 1, globalMaxEnd + 1);
+            return new Pair<>(globalMaxStart + 1, globalMaxEnd + 1);
 
         } catch (IOException e) {
             e.printStackTrace();
@@ -89,6 +80,8 @@ public class JavaAlgorithms {
     }
 
     // Сложность алгоритма O(n)
+
+    // Оценка ресурсоёмкости: O(n), т.к. требуется создать массив, размер которого равен количеству входных данных
 
     /**
      * Задача Иосифа Флафия.
@@ -158,6 +151,8 @@ public class JavaAlgorithms {
     // решая самостоятельно, я не смог этого сделать, несмотря на то, что расписал таблицу, а на Википедии эта
     // закономерность обозначена как "отчётливо видная в таблице".
 
+    // Оценка ресурсоёмкости: O(1)
+
     /**
      * Наибольшая общая подстрока.
      * Средняя
@@ -189,21 +184,18 @@ public class JavaAlgorithms {
             }
         }
 
-        ArrayList<String> letters = new ArrayList<>();
+        StringBuilder result = new StringBuilder();
         while (maxEndX >= 0 && maxEndY >= 0 && matrix[maxEndX][maxEndY] != 0) {
-            letters.add(String.valueOf(first.charAt(maxEndX--)));
+            result.append(first.charAt(maxEndX--));
             maxEndY--;
         }
 
-        StringBuilder result = new StringBuilder();
-        for (int i = letters.size() - 1; i >= 0; i--) {
-            result.append(letters.get(i));
-        }
-
-        return result.toString();
+        return result.reverse().toString();
     }
 
     // Сложность алогоритма O(first.length() * second.length())
+
+    // Оценка ресурсоёмкости: O(first.length() * second.length()) из-за матрицы
 
     /**
      * Число простых чисел в интервале
@@ -245,7 +237,108 @@ public class JavaAlgorithms {
      * В файле буквы разделены пробелами, строки -- переносами строк.
      * Остальные символы ни в файле, ни в словах не допускаются.
      */
-    static public Set<String> baldaSearcher(String inputName, Set<String> words) {
-        throw new NotImplementedError();
+
+    private static PrefixTree prefixTree;
+    private static String[][] letterMatrix;
+    private static int width;
+    private static int amountOfLetters;
+    private static boolean[][] adjacencyMatrix;
+    private static boolean[] visited;
+    private static HashSet<String> answer;
+
+    private static void strangeDfs(int letterIndex, TrieNode current) {
+        visited[letterIndex] = true;
+
+        for (int i = 0; i < amountOfLetters; i++) {
+            if (adjacencyMatrix[letterIndex][i] && !visited[i]) {
+                char l = letterMatrix[letterIndex / width][letterIndex % width].charAt(0);
+
+                TrieNode probableNext = prefixTree.nextNode(current, l);
+
+                if (probableNext != null) {
+                    if (probableNext.isEndOfWord() != null) {
+                        String word = probableNext.isEndOfWord();
+                        answer.add(word);
+                        prefixTree.delete(word);
+                    }
+                    strangeDfs(i, probableNext);
+                }
+            }
+        }
+
+        visited[letterIndex] = false;
     }
+
+    static public Set<String> baldaSearcher(String inputName, Set<String> words) {
+        try {
+            answer = new HashSet<>();
+            prefixTree = new PrefixTree();
+
+            // Fill the prefix tree
+            for (String word : words) {
+                prefixTree.insert(word);
+            }
+
+            // Read file
+            ArrayList<String> fileContent = (ArrayList<String>) Files.readAllLines(Paths.get(inputName));
+            int height = fileContent.size();
+
+            // Convert file content into matrix of letters
+            letterMatrix = new String[height][];
+
+            for (int i = 0; i < height; i++) {
+                letterMatrix[i] = fileContent.get(i).split(" ");
+            }
+            width = letterMatrix[0].length;
+
+            // Fill adjacency matrix based on the suggested table
+            amountOfLetters = height * width;
+            adjacencyMatrix = new boolean[amountOfLetters][amountOfLetters];
+            visited = new boolean[amountOfLetters];
+            for (int i = 0; i < height; i++) {
+                for (int j = 0; j < width; j++) {
+                    int letterNum = i * width + j;
+
+                    if (j != 0) {
+                        adjacencyMatrix[letterNum][letterNum - 1] = true;
+                        adjacencyMatrix[letterNum - 1][letterNum] = true;
+                    }
+
+                    if (j != width - 1) {
+                        adjacencyMatrix[letterNum][letterNum + 1] = true;
+                        adjacencyMatrix[letterNum + 1][letterNum] = true;
+                    }
+
+                    if (i != 0) {
+                        adjacencyMatrix[letterNum][letterNum - width] = true;
+                        adjacencyMatrix[letterNum - width][letterNum] = true;
+                    }
+
+                    if (i != height - 1) {
+                        adjacencyMatrix[letterNum][letterNum + width] = true;
+                        adjacencyMatrix[letterNum + width][letterNum] = true;
+                    }
+                }
+            }
+
+            for (int i = 0; i < amountOfLetters; i++) {
+                int x = i / width;
+                int y = i % width;
+                if (prefixTree.getRoot().getChildren().containsKey(letterMatrix[x][y].charAt(0))) {
+                    strangeDfs(i, prefixTree.getRoot());
+                }
+            }
+
+            return answer;
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return null;
+    }
+
+    // Оценка сложности: words.size() * (input.height * input.width) ^ 2
+
+    // Оценка ресурсоёмкости: O(words.size() * longest_word_length)
 }

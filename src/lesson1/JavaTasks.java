@@ -1,11 +1,8 @@
 package lesson1;
 
-import kotlin.NotImplementedError;
-
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
-import java.nio.file.NoSuchFileException;
 import java.nio.file.Paths;
 import java.util.*;
 
@@ -45,45 +42,44 @@ public class JavaTasks {
      *
      * В случае обнаружения неверного формата файла бросить любое исключение.
      */
+    private static int parsedTime(String line, int start, int end, int lowerLimit, int upperLimit) {
+        int ans = Integer.parseInt(line.substring(start, end));
+        if (ans > upperLimit || ans < lowerLimit) {
+            throw new IllegalArgumentException();
+        }
+        return ans;
+    }
+
+    private static int rawSeconds(String line) {
+        if (!line.matches("(\\d{2}:){2}\\d{2} [AP]M")) {
+            throw new IllegalArgumentException();
+        }
+
+        int hours = parsedTime(line, 0, 2, 1, 12);
+        int minutes = parsedTime(line, 3, 5, 0, 59);
+        int seconds = parsedTime(line, 6, 8, 0, 59);
+
+        int ans = SEC_IN_MIN * minutes + seconds;
+        int h = hours % 12 * SEC_IN_HR;
+        ans += (line.endsWith("AM")) ? h : (SEC_IN_HR * 12 + h);
+
+        return ans;
+    }
+
      public static void sortTimes(String inputName, String outputName) {
         try {
             ArrayList<String> fileContent = (ArrayList<String>) Files.readAllLines(Paths.get(inputName));
-            int[] timeInRawSeconds = new int[fileContent.size()];
+            Integer[] timeInRawSeconds = new Integer[fileContent.size()];
             int hours;
             int minutes;
             int seconds;
 
             for (int i = 0; i < fileContent.size(); i++) {
                 String line = fileContent.get(i);
-                if (!line.matches("\\d{2}:\\d{2}:\\d{2} [A,P]M")) {
-                    throw new IllegalArgumentException();
-                }
-
-                hours = Integer.parseInt(line.substring(0, 2));
-                if (hours > 12 || hours < 1) {
-                    throw new IllegalArgumentException();
-                }
-                minutes = Integer.parseInt(line.substring(3, 5));
-                if (minutes > 59 || minutes < 0) {
-                    throw new IllegalArgumentException();
-                }
-                seconds = Integer.parseInt(line.substring(6, 8));
-                if (seconds > 59 || seconds < 0) {
-                    throw new IllegalArgumentException();
-                }
-
-                timeInRawSeconds[i] = (line.endsWith("AM"))
-                        ? (
-                                (!line.startsWith("12")
-                                        ? (SEC_IN_HR * hours + SEC_IN_MIN * minutes + seconds)
-                                        : (SEC_IN_MIN * minutes + seconds)))
-                        : (
-                                (!line.startsWith("12")
-                                        ? (SEC_IN_HR * (12 + hours) + SEC_IN_MIN * minutes + seconds)
-                                        : (SEC_IN_HR * hours + SEC_IN_MIN * minutes + seconds)));
+                timeInRawSeconds[i] = rawSeconds(line);
             }
 
-            Util.mergeSortInt(timeInRawSeconds, 0, timeInRawSeconds.length);
+            Util.genericMergeSort(timeInRawSeconds);
 
             ArrayList<String> result = new ArrayList<>();
 
@@ -112,7 +108,9 @@ public class JavaTasks {
             e.printStackTrace();
         }
     }
-    // Оценка сложности: O(n*log(n)), т.к. самая длительная операция - mergeSort, имеющая именно такую сложность
+    // Оценка сложности: O(n*log(n)), т.к. самая длительная операция - mergeSort, имеющая именно такую сложность.
+
+    // Оценка ресурсоёмкости O(n), т.к. необходимо создать массив, размер которого зависит от количества входных данных.
 
     /**
      * Сортировка адресов
@@ -143,11 +141,15 @@ public class JavaTasks {
     static public void sortAddresses(String inputName, String outputName) {
         try {
             ArrayList<String> fileContent = (ArrayList<String>) Files.readAllLines(Paths.get(inputName));
+            String[] initialSort = new String[fileContent.size()];
+            fileContent.toArray(initialSort);
+            Util.genericMergeSort(initialSort);
 
             HashMap<String, ArrayList<String>> inhabitantsByHouses = new HashMap<>();
-            for (String line: fileContent) {
+            for (String line: initialSort) {
                 if (!line.matches(
-                        "([А-ЯЁA-Z][а-яёa-z]+-?([А-ЯЁA-Z][а-яёa-z]+)? ){2}- ([А-ЯЁA-Z][а-яёa-z]+-?([А-ЯЁA-Z][а-яёa-z]+)? )\\d+")) {
+                        "([А-ЯЁA-Z][а-яёa-z]+-?([А-ЯЁA-Z][а-яёa-z]+)? ){2}-" +
+                                " ([А-ЯЁA-Z][а-яёa-z]+-?([А-ЯЁA-Z][а-яёa-z]+)? )\\d+")) {
                     throw new IllegalArgumentException();
                 }
 
@@ -159,6 +161,29 @@ public class JavaTasks {
                 String[] splitLine = line.split(" - ");
                 String nameAndSurname = splitLine[0];
                 String address = splitLine[1];
+
+//                inhabitantsByHouses
+//                        .getOrDefault(
+//                                address,
+//                                inhabitantsByHouses.put(address, new ArrayList<>(Collections.emptyList()))
+//                        ).add(nameAndSurname);
+                // Полагаю, Вы хотели увидеть именно такое применение getOrDefault в этой задаче. Оно вполне логично,
+                // но есть всего одна небольшая проблема: оно по неизвестным науке причинам не работает; getOrDefault от
+                // таких аргументов всегда возвращает пустой список и не находит нужный ключ в таблице, несмотря на то,
+                // что, когда я предварительно проверял его наличие с помощью containsKey, получал на выходе true.
+
+//                ArrayList<String> a = inhabitantsByHouses
+//                        .getOrDefault(
+//                                address,
+//                                new ArrayList<>(Collections.emptyList())
+//                        );
+//                a.add(nameAndSurname);
+//                inhabitantsByHouses.put(address, a);
+                // Вот так, напротив, работает. Однако каждый раз вызывать put вне зависимости от того, был ли уже
+                // нужный ключ в Map или нет, кажется мне как минимум нецелесообразным; к тому же, если я правильно
+                // понимаю, put работает за O(Map.size()), что не есть хорошо. Посему я решил оставить код в исходном
+                // виде.
+
                 if (inhabitantsByHouses.containsKey(address)) {
                     inhabitantsByHouses.get(address).add(nameAndSurname);
                 } else {
@@ -175,19 +200,17 @@ public class JavaTasks {
                 index++;
             }
 
-            Util.mergeSortByAddress(toSortByAddress, 0, toSortByAddress.length);
+            Util.genericMergeSort(toSortByAddress);
 
             ArrayList<String> result = new ArrayList<>();
 
             for (HouseWithInhabitants hwi: toSortByAddress) {
                 StringBuilder builder = new StringBuilder();
-                builder.append(hwi.address.street).append(" ").append(hwi.address.house).append(" - ");
-                String[] inhS = new String[hwi.inhabitants.size()];
-                hwi.inhabitants.toArray(inhS);
-                Util.mergeSortString(inhS, 0, inhS.length);
-                for (int i = 0; i < inhS.length; i++) {
-                    builder.append(inhS[i]);
-                    if (i != inhS.length - 1) {
+                builder.append(hwi.getAddress().toString()).append(" - ");
+                ArrayList<String> inhS = hwi.getInhabitants();
+                for (int i = 0; i < inhS.size(); i++) {
+                    builder.append(inhS.get(i));
+                    if (i != inhS.size() - 1) {
                         builder.append(", ");
                     }
                 }
@@ -204,6 +227,9 @@ public class JavaTasks {
     // количество букв в имени, a - количество уникальных адресов. В случае, когда в каждом доме живёт лишь по одному
     // человеку, имена не будут нуждаться в сортировке, и формула превратится в O(l*n*log(n)); в среднем случае n>>a, и
     // первое слагаемое оказывается поглощено, так что формула превращается в O(k*n*log(n)).
+
+    // Оценка ресурсоёмкости: O(n), т.к. требуется создать Map, в которой количество ключей равно количеству уникальных
+    // адресов, а суммарный размер всех списков-value равен общему количеству входных данных.
 
     /**
      * Сортировка температур
@@ -293,6 +319,7 @@ public class JavaTasks {
         }
     }
     // Сложность алгоритма O(n).
+    // Оценка ресурсоёмкости: O(1), т.к. при любых входных данных создаётся один и тот же массив с 7731 элементом
 
     /**
      * Сортировка последовательности
@@ -378,6 +405,9 @@ public class JavaTasks {
     // Библиотечная операция containsKey работает за O(log(n)), весь остальной код умещается в одном цикле, так что
     // сложность алгоритма O(n*log(n)).
 
+    // Оценка ресурсоёмкости: O(n), т.к. требуется создать Map, размер которого равен количеству уникальных элементов
+    // во входном массиве и, следовательно, прямо пропорционален его полному размеру
+
     /**
      * Соединить два отсортированных массива в один
      *
@@ -408,4 +438,9 @@ public class JavaTasks {
     }
 
     // Сложность алгоритма O(n).
+
+    // Оценка ресурсоёмкости: O(n), т.к. создаётся массив, содержащий все non-null элементы второго из входных
+    // массивов. Можно было бы не создавать этот массив, а просто добавлять все элементы первого массива вместо null
+    // элементов второго: в таком случае мы бы получили сортировку на месте и ресурсоёмкость O(1), но потеряли бы в
+    // в скорости, будучи вынужденными проводить полную mergeSort за O(n*log(n)).
 }

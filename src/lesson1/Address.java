@@ -1,17 +1,14 @@
 package lesson1;
 
-public class Address {
-    String street;
-    int house;
+import org.jetbrains.annotations.NotNull;
+
+public class Address implements Comparable<Address> {
+    private String street;
+    private int house;
 
     Address(String street, int house) {
         this.street = street;
         this.house = house;
-    }
-
-    boolean isAlphabeticallyEarlier(Address other) {
-        String firstStreet = Util.alphabeticallyFirstString(this.street, other.street, 0);
-        return (firstStreet == null && this.house < other.house || firstStreet != null && firstStreet.equals(this.street));
     }
 
     @Override
@@ -21,6 +18,20 @@ public class Address {
         }
 
         Address other = (Address)obj;
-        return (this.house == other.house && this.street.equals(other.street));
+        return (house == other.house && street.equals(other.street));
+    }
+
+    @Override
+    public int compareTo(@NotNull Address o) {
+        if (street.equals(o.street)) {
+            return house - o.house;
+        }
+
+        return street.compareTo(o.street);
+    }
+
+    @Override
+    public String toString() {
+        return street + " " + house;
     }
 }
