@@ -1,6 +1,7 @@
 package lesson3;
 
 import kotlin.NotImplementedError;
+import kotlin.Pair;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -25,6 +26,18 @@ public class BinaryTree<T extends Comparable<T>> extends AbstractSet<T> implemen
 
     private int size = 0;
 
+    // TODO: delete printInfo before sending!!!
+    void printInfo() {
+        printInfo(root);
+        System.out.println();
+    }
+
+    private void printInfo(Node<T> node) {
+        System.out.println("Node: " + node.value + ", left: " + (node.left == null ? "null" : node.left.value) + ", right: " + (node.right == null ? "null" : node.right.value));
+        if (node.left != null) printInfo(node.left);
+        if (node.right != null) printInfo(node.right);
+    }
+
     @Override
     public boolean add(T t) {
         Node<T> closest = find(t);
@@ -35,12 +48,10 @@ public class BinaryTree<T extends Comparable<T>> extends AbstractSet<T> implemen
         Node<T> newNode = new Node<>(t);
         if (closest == null) {
             root = newNode;
-        }
-        else if (comparison < 0) {
+        } else if (comparison < 0) {
             assert closest.left == null;
             closest.left = newNode;
-        }
-        else {
+        } else {
             assert closest.right == null;
             closest.right = newNode;
         }
@@ -74,8 +85,82 @@ public class BinaryTree<T extends Comparable<T>> extends AbstractSet<T> implemen
      */
     @Override
     public boolean remove(Object o) {
-        // TODO
-        throw new NotImplementedError();
+        @SuppressWarnings("unchecked")
+        T t = (T) o;
+        boolean deleted = false;
+        while (true) {
+            Pair<Node<T>, Node<T>> closestWithParent = findWithParent(t);
+            Node<T> closest = closestWithParent != null ? closestWithParent.getFirst() : null;
+            Node<T> p = closestWithParent != null ? closestWithParent.getSecond() : null;
+            // null (if tree is empty)
+            // Node that would be a parent of a Node that would the t value if it existed (if the tree doesn't contain it)
+            // Node that holds the t value (if the tree contains it)
+
+            if (closestWithParent == null || closest == null || t.compareTo(closest.value) != 0) { // check for situations 1 and 2
+                return deleted;
+            }
+
+            deleted = true;
+            size--;
+
+            // case 1: closest has no right child
+            if (closest.right == null) {
+                if (p == null) {
+                    root = closest.left;
+                } else {
+                    int comp = p.value.compareTo(closest.value); // 1 if parent > child -> left, -1 if parent < child -> right
+
+                    if (comp > 0) {
+                        p.left = closest.left;
+                    } else {
+                        p.right = closest.left;
+                    }
+                }
+                // __________ END OF CASE 1 _________
+            } else {
+                // case 2: closest has a right child
+                Node<T> mostLeft = closest.right;
+                Node<T> mostLeftP = null;
+
+                while (mostLeft.left != null) {
+                    mostLeftP = mostLeft;
+                    mostLeft = mostLeft.left;
+                }
+
+                if (p == null) {
+                    root = new Node<>(mostLeft.value);
+                    root.left = closest.left;
+                    if (mostLeftP != null) {
+                        mostLeftP.left = mostLeft.right;
+                        root.right = closest.right;
+                    } else {
+                        root.right = closest.right.right;
+                    }
+                } else {
+                    int comp = p.value.compareTo(closest.value); // 1 if parent > child -> left, -1 if parent < child -> right
+
+                    if (comp > 0) {
+                        p.left = new Node<>(mostLeft.value);
+                        p.left.left = closest.left;
+                        if (mostLeftP != null) {
+                            mostLeftP.left = mostLeft.right;
+                            p.left.right = closest.right;
+                        } else {
+                            p.left.right = closest.right.right;
+                        }
+                    } else {
+                        p.right = new Node<>(mostLeft.value);
+                        p.right.left = closest.left;
+                        if (mostLeftP != null) {
+                            mostLeftP.left = mostLeft.right;
+                            p.right.right = closest.right;
+                        } else {
+                            p.right.right = closest.right.right;
+                        }
+                    }
+                }
+            }
+        }
     }
 
     @Override
@@ -84,6 +169,35 @@ public class BinaryTree<T extends Comparable<T>> extends AbstractSet<T> implemen
         T t = (T) o;
         Node<T> closest = find(t);
         return closest != null && t.compareTo(closest.value) == 0;
+    }
+
+    private Pair<Node<T>, Node<T>> findWithParent(T value) {
+        if (root == null) {
+            return null;
+        }
+        parent = null;
+        return findWithParent(root, value);
+    }
+
+    private Node<T> parent;
+
+    private Pair<Node<T>, Node<T>> findWithParent(Node<T> start, T value) {
+        int comparison = value.compareTo(start.value);
+        if (comparison == 0) {
+            return new Pair<>(start, parent);
+        }
+
+        if (comparison < 0) {
+            if (start.left == null) {
+                return new Pair<>(start, parent);
+            }
+            parent = start;
+            return findWithParent(start.left, value);
+        }
+
+        if (start.right == null) return new Pair<>(start, parent);
+        parent = start;
+        return findWithParent(start.right, value);
     }
 
     private Node<T> find(T value) {
@@ -95,12 +209,10 @@ public class BinaryTree<T extends Comparable<T>> extends AbstractSet<T> implemen
         int comparison = value.compareTo(start.value);
         if (comparison == 0) {
             return start;
-        }
-        else if (comparison < 0) {
+        } else if (comparison < 0) {
             if (start.left == null) return start;
             return find(start.left, value);
-        }
-        else {
+        } else {
             if (start.right == null) return start;
             return find(start.right, value);
         }
@@ -108,8 +220,17 @@ public class BinaryTree<T extends Comparable<T>> extends AbstractSet<T> implemen
 
     public class BinaryTreeIterator implements Iterator<T> {
 
+        Node<T> current;
+        boolean initial;
+
         private BinaryTreeIterator() {
-            // Добавьте сюда инициализацию, если она необходима
+            if (root != null) {
+                initial = true;
+                current = root.left == null ? root : root.left;
+                while (current.left != null) {
+                    current = current.left;
+                }
+            }
         }
 
         /**
@@ -118,28 +239,75 @@ public class BinaryTree<T extends Comparable<T>> extends AbstractSet<T> implemen
          */
         @Override
         public boolean hasNext() {
-            // TODO
-            throw new NotImplementedError();
+            if (root != null) {
+                Node<T> mostRight = root.right == null ? root : root.right;
+                while (mostRight.right != null) {
+                    mostRight = mostRight.right;
+                }
+                return current != null && (current.value != mostRight.value || current.right != null);
+            }
+            return false;
         }
 
         /**
          * Поиск следующего элемента
          * Средняя
          */
+        private Node<T> theMostLeft(@NotNull Node<T> start) {
+            Node<T> ans = start.right;
+            while (ans.left != null) {
+                ans = ans.left;
+            }
+
+            return ans;
+        }
+
         @Override
         public T next() {
-            // TODO
-            throw new NotImplementedError();
+            if (hasNext()) {
+
+                if (initial) {
+                    initial = false;
+                    return current.value;
+                }
+
+                Pair<Node<T>, Node<T>> currentAndParent = findWithParent(current.value);
+                assert currentAndParent != null;
+                Node<T> cPar = currentAndParent.getSecond();
+
+                if (current.right != null) {
+                    Node<T> m = theMostLeft(current);
+                    current = m;
+                    return m.value;
+                }
+
+                if (cPar != null) {
+
+                    int comp = current.value.compareTo(cPar.value); // -1 if parent is bigger -> left; 1 -> right
+
+                    while (comp > 0) {
+                        Pair<Node<T>, Node<T>> temp = findWithParent(cPar.value);
+                        assert temp != null;
+                        Node<T> parPar = temp.getSecond();
+                        comp = cPar.value.compareTo(parPar.value);
+                        cPar = parPar;
+                    }
+
+                    current = cPar;
+                    return cPar.value;
+                }
+
+            }
+            throw new NoSuchElementException();
         }
 
         /**
-         * Удаление следующего элемента
+         * Удаление слэледующего емента
          * Сложная
          */
         @Override
         public void remove() {
-            // TODO
-            throw new NotImplementedError();
+            //TODO
         }
     }
 
