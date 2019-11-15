@@ -220,16 +220,24 @@ public class BinaryTree<T extends Comparable<T>> extends AbstractSet<T> implemen
 
     public class BinaryTreeIterator implements Iterator<T> {
 
-        Node<T> current;
-        boolean initial;
+        ArrayList<T> asList;
+        int current;
+
+        private void fill(@NotNull Node<T> start) {
+            if (start.left != null) {
+                fill(start.left);
+            }
+            asList.add(start.value);
+            if (start.right != null) {
+                fill(start.right);
+            }
+        }
 
         private BinaryTreeIterator() {
             if (root != null) {
-                initial = true;
-                current = root.left == null ? root : root.left;
-                while (current.left != null) {
-                    current = current.left;
-                }
+                asList = new ArrayList<>();
+                fill(root);
+                current = 0;
             }
         }
 
@@ -239,66 +247,17 @@ public class BinaryTree<T extends Comparable<T>> extends AbstractSet<T> implemen
          */
         @Override
         public boolean hasNext() {
-            if (root != null) {
-                Node<T> mostRight = root.right == null ? root : root.right;
-                while (mostRight.right != null) {
-                    mostRight = mostRight.right;
-                }
-                return current != null && (current.value != mostRight.value || current.right != null);
-            }
-            return false;
+            return root != null && current < asList.size();
         }
 
         /**
          * Поиск следующего элемента
          * Средняя
          */
-        private Node<T> theMostLeft(@NotNull Node<T> start) {
-            Node<T> ans = start.right;
-            while (ans.left != null) {
-                ans = ans.left;
-            }
-
-            return ans;
-        }
 
         @Override
         public T next() {
-            if (hasNext()) {
-
-                if (initial) {
-                    initial = false;
-                    return current.value;
-                }
-
-                Pair<Node<T>, Node<T>> currentAndParent = findWithParent(current.value);
-                assert currentAndParent != null;
-                Node<T> cPar = currentAndParent.getSecond();
-
-                if (current.right != null) {
-                    Node<T> m = theMostLeft(current);
-                    current = m;
-                    return m.value;
-                }
-
-                if (cPar != null) {
-
-                    int comp = current.value.compareTo(cPar.value); // -1 if parent is bigger -> left; 1 -> right
-
-                    while (comp > 0) {
-                        Pair<Node<T>, Node<T>> temp = findWithParent(cPar.value);
-                        assert temp != null;
-                        Node<T> parPar = temp.getSecond();
-                        comp = cPar.value.compareTo(parPar.value);
-                        cPar = parPar;
-                    }
-
-                    current = cPar;
-                    return cPar.value;
-                }
-
-            }
-            throw new NoSuchElementException();
+            return asList.get(current++);
         }
 
         /**
