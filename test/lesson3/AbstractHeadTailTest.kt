@@ -154,7 +154,7 @@ abstract class AbstractHeadTailTest {
         }
 
         // My tests
-        assertThrows<AssertionError> { tree.subSet(4, 3) }
+        assertThrows<java.lang.IllegalArgumentException> { tree.subSet(4, 3) }
         val testSet = tree.subSet(1, 7)
         assertEquals(6, testSet.size)
         val oldTreeSize = tree.size

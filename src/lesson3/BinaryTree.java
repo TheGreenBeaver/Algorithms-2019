@@ -334,8 +334,10 @@ public class BinaryTree<T extends Comparable<T>> extends AbstractSet<T> implemen
     @NotNull
     @Override
     public SortedSet<T> subSet(T fromElement, T toElement) {
-        assert fromElement.compareTo(toElement) < 0;
-        return new BoundSortedSet<>(this, fromElement, toElement);
+        if (fromElement.compareTo(toElement) < 0) {
+            return new BoundSortedSet<>(this, fromElement, toElement);
+        }
+        throw new IllegalArgumentException();
     }
 
     // Оценка сложности: O(1)

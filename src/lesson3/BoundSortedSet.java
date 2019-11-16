@@ -129,7 +129,7 @@ public class BoundSortedSet<T extends Comparable<T>> implements SortedSet<T> {
     @Override
     public boolean add(T t) {
         if ((lowerBound == null || t.compareTo(lowerBound) >= 0)
-                && (upperBound == null || t.compareTo(upperBound) <= 0)) {
+                && (upperBound == null || t.compareTo(upperBound) < 0)) {
             return delegate.add(t);
         }
         throw new IllegalArgumentException();
