@@ -1,6 +1,5 @@
 package lesson3;
 
-import kotlin.NotImplementedError;
 import kotlin.Pair;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -25,18 +24,7 @@ public class BinaryTree<T extends Comparable<T>> extends AbstractSet<T> implemen
     private Node<T> root = null;
 
     private int size = 0;
-
-    // TODO: delete printInfo before sending!!!
-    void printInfo() {
-        printInfo(root);
-        System.out.println();
-    }
-
-    private void printInfo(Node<T> node) {
-        System.out.println("Node: " + node.value + ", left: " + (node.left == null ? "null" : node.left.value) + ", right: " + (node.right == null ? "null" : node.right.value));
-        if (node.left != null) printInfo(node.left);
-        if (node.right != null) printInfo(node.right);
-    }
+    private boolean changed = false;
 
     @Override
     public boolean add(T t) {
@@ -56,6 +44,7 @@ public class BinaryTree<T extends Comparable<T>> extends AbstractSet<T> implemen
             closest.right = newNode;
         }
         size++;
+        changed = true;
         return true;
     }
 
@@ -87,81 +76,78 @@ public class BinaryTree<T extends Comparable<T>> extends AbstractSet<T> implemen
     public boolean remove(Object o) {
         @SuppressWarnings("unchecked")
         T t = (T) o;
-        boolean deleted = false;
-        while (true) {
-            Pair<Node<T>, Node<T>> closestWithParent = findWithParent(t);
-            Node<T> closest = closestWithParent != null ? closestWithParent.getFirst() : null;
-            Node<T> p = closestWithParent != null ? closestWithParent.getSecond() : null;
-            // null (if tree is empty)
-            // Node that would be a parent of a Node that would the t value if it existed (if the tree doesn't contain it)
-            // Node that holds the t value (if the tree contains it)
+        Pair<Node<T>, Node<T>> closestWithParent = findWithParent(t);
+        Node<T> closest = closestWithParent != null ? closestWithParent.getFirst() : null;
+        Node<T> p = closestWithParent != null ? closestWithParent.getSecond() : null;
 
-            if (closestWithParent == null || closest == null || t.compareTo(closest.value) != 0) { // check for situations 1 and 2
-                return deleted;
+        if (closestWithParent == null || closest == null || t.compareTo(closest.value) != 0) {
+            changed = false;
+            return false;
+        }
+
+        size--;
+
+        if (closest.right == null) {
+            if (p == null) {
+                root = closest.left;
+            } else {
+                int comp = p.value.compareTo(closest.value);
+
+                if (comp > 0) {
+                    p.left = closest.left;
+                } else {
+                    p.right = closest.left;
+                }
+            }
+        } else {
+            Node<T> mostLeft = closest.right;
+            Node<T> mostLeftP = null;
+
+            while (mostLeft.left != null) {
+                mostLeftP = mostLeft;
+                mostLeft = mostLeft.left;
             }
 
-            deleted = true;
-            size--;
-
-            // case 1: closest has no right child
-            if (closest.right == null) {
-                if (p == null) {
-                    root = closest.left;
+            if (p == null) {
+                root = new Node<>(mostLeft.value);
+                root.left = closest.left;
+                if (mostLeftP != null) {
+                    mostLeftP.left = mostLeft.right;
+                    root.right = closest.right;
                 } else {
-                    int comp = p.value.compareTo(closest.value); // 1 if parent > child -> left, -1 if parent < child -> right
-
-                    if (comp > 0) {
-                        p.left = closest.left;
-                    } else {
-                        p.right = closest.left;
-                    }
+                    root.right = closest.right.right;
                 }
-                // __________ END OF CASE 1 _________
             } else {
-                // case 2: closest has a right child
-                Node<T> mostLeft = closest.right;
-                Node<T> mostLeftP = null;
+                int comp = p.value.compareTo(closest.value);
 
-                while (mostLeft.left != null) {
-                    mostLeftP = mostLeft;
-                    mostLeft = mostLeft.left;
-                }
-
-                if (p == null) {
-                    root = new Node<>(mostLeft.value);
-                    root.left = closest.left;
+                if (comp > 0) {
+                    p.left = new Node<>(mostLeft.value);
+                    p.left.left = closest.left;
                     if (mostLeftP != null) {
                         mostLeftP.left = mostLeft.right;
-                        root.right = closest.right;
+                        p.left.right = closest.right;
                     } else {
-                        root.right = closest.right.right;
+                        p.left.right = closest.right.right;
                     }
                 } else {
-                    int comp = p.value.compareTo(closest.value); // 1 if parent > child -> left, -1 if parent < child -> right
-
-                    if (comp > 0) {
-                        p.left = new Node<>(mostLeft.value);
-                        p.left.left = closest.left;
-                        if (mostLeftP != null) {
-                            mostLeftP.left = mostLeft.right;
-                            p.left.right = closest.right;
-                        } else {
-                            p.left.right = closest.right.right;
-                        }
+                    p.right = new Node<>(mostLeft.value);
+                    p.right.left = closest.left;
+                    if (mostLeftP != null) {
+                        mostLeftP.left = mostLeft.right;
+                        p.right.right = closest.right;
                     } else {
-                        p.right = new Node<>(mostLeft.value);
-                        p.right.left = closest.left;
-                        if (mostLeftP != null) {
-                            mostLeftP.left = mostLeft.right;
-                            p.right.right = closest.right;
-                        } else {
-                            p.right.right = closest.right.right;
-                        }
+                        p.right.right = closest.right.right;
                     }
                 }
             }
         }
+
+        changed = true;
+        return true;
     }
+    // Оценка сложности: O(height) (поиск удаляемого элемента и его предка в худшем случае займёт именно столько)
+
+    // Оценка используемой памяти: O(height) (рекурсивный алгоритм поиска)
 
     @Override
     public boolean contains(Object o) {
@@ -218,28 +204,51 @@ public class BinaryTree<T extends Comparable<T>> extends AbstractSet<T> implemen
         }
     }
 
+    private ArrayList<T> asList = new ArrayList<>();
+
+    private void fill(@NotNull Node<T> start) {
+        if (start.left != null) {
+            fill(start.left);
+        }
+        asList.add(start.value);
+        if (start.right != null) {
+            fill(start.right);
+        }
+    }
+
+    ArrayList<T> fill() {
+        asList.clear();
+        fill(root);
+        return asList;
+    }
+
     public class BinaryTreeIterator implements Iterator<T> {
 
-        ArrayList<T> asList;
         int current;
 
-        private void fill(@NotNull Node<T> start) {
-            if (start.left != null) {
-                fill(start.left);
-            }
-            asList.add(start.value);
-            if (start.right != null) {
-                fill(start.right);
+        private void refresh() {
+            if (changed) {
+                T old = asList.get(current != 0 ? current - 1 : current);
+                if (root != null) {
+                    fill();
+                    int newIndex = binarySearch(old);
+                    current = (newIndex != 0 && asList.get(newIndex).compareTo(old) > 0) ? newIndex : newIndex + 1;
+                }
+
+                changed = false;
             }
         }
 
         private BinaryTreeIterator() {
             if (root != null) {
-                asList = new ArrayList<>();
-                fill(root);
+                fill();
                 current = 0;
+                changed = false;
             }
         }
+        // Оценка сложности: O(size)
+
+        // Оценка памяти: O(size) (рекурсия, а затем хранение asList)
 
         /**
          * Проверка наличия следующего элемента
@@ -247,8 +256,12 @@ public class BinaryTree<T extends Comparable<T>> extends AbstractSet<T> implemen
          */
         @Override
         public boolean hasNext() {
+            refresh();
             return root != null && current < asList.size();
         }
+        // Оценка сложности: O(1) (O(size), если дерево было изменено после предыдущей итерации)
+
+        // Оценка памяти: O(1) (O(size), если дерево было изменено после предыдущей итерации)
 
         /**
          * Поиск следующего элемента
@@ -257,17 +270,43 @@ public class BinaryTree<T extends Comparable<T>> extends AbstractSet<T> implemen
 
         @Override
         public T next() {
-            return asList.get(current++);
+            if (hasNext()) {
+                return asList.get(current++);
+            }
+            throw new NoSuchElementException();
         }
+        // Оценка сложности: O(1) (O(size), если дерево было изменено после предыдущей итерации)
+
+        // Оценка памяти: O(1) (O(size), если дерево было изменено после предыдущей итерации)
 
         /**
-         * Удаление слэледующего емента
+         * Удаление следующего емента
          * Сложная
          */
+
+        private int binarySearch(T toSearch) {
+            return Util.binarySearch(toSearch, asList);
+        }
+
         @Override
         public void remove() {
-            //TODO
+            refresh();
+            if (current != 0 && current <= asList.size()) {
+                T toRemove = asList.get(current - 1);
+                int start = binarySearch(toRemove);
+                current = start;
+                asList.remove(start);
+                BinaryTree.this.remove(toRemove);
+                changed = false;
+            } else {
+                throw new IllegalStateException();
+            }
         }
+
+        // Оценка сложности: O(size)
+
+        // Оценка памяти: O(log(size)) = O(height) (рекурсия при бинарном поиске)
+        // (O(size), если дерево было изменено после предыдущей итерации)
     }
 
     @NotNull
@@ -295,9 +334,13 @@ public class BinaryTree<T extends Comparable<T>> extends AbstractSet<T> implemen
     @NotNull
     @Override
     public SortedSet<T> subSet(T fromElement, T toElement) {
-        // TODO
-        throw new NotImplementedError();
+        assert fromElement.compareTo(toElement) < 0;
+        return new BoundSortedSet<>(this, fromElement, toElement);
     }
+
+    // Оценка сложности: O(1)
+
+    // Оценка памяти: O(1)
 
     /**
      * Найти множество всех элементов меньше заданного
@@ -306,9 +349,11 @@ public class BinaryTree<T extends Comparable<T>> extends AbstractSet<T> implemen
     @NotNull
     @Override
     public SortedSet<T> headSet(T toElement) {
-        // TODO
-        throw new NotImplementedError();
+        return new BoundSortedSet<>(this, null, toElement);
     }
+    // Оценка сложности: O(1)
+
+    // Оценка памяти: O(1)
 
     /**
      * Найти множество всех элементов больше или равных заданного
@@ -317,9 +362,11 @@ public class BinaryTree<T extends Comparable<T>> extends AbstractSet<T> implemen
     @NotNull
     @Override
     public SortedSet<T> tailSet(T fromElement) {
-        // TODO
-        throw new NotImplementedError();
+        return new BoundSortedSet<>(this, fromElement, null);
     }
+    // Оценка сложности: O(1)
+
+    // Оценка памяти: O(1)
 
     @Override
     public T first() {

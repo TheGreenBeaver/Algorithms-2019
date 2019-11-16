@@ -1,7 +1,11 @@
 package lesson3
 
+import org.junit.jupiter.api.assertThrows
 import java.util.*
-import kotlin.test.*
+import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 abstract class AbstractHeadTailTest {
     private lateinit var tree: SortedSet<Int>
@@ -52,6 +56,16 @@ abstract class AbstractHeadTailTest {
         for (i in 1..10)
             assertEquals(true, set.contains(i))
 
+        // My tests
+        set = tree.headSet(-15)
+        assertThrows<java.lang.IllegalArgumentException> { set.add(11) }
+        assertFalse(set.contains(10))
+        assertFalse(tree.contains(11))
+        assertTrue(set.size == 0)
+        assertTrue(set.add(-23))
+        assertTrue(tree.contains(-23))
+        set = tree.headSet(6)
+        assertFalse(set.contains(6))
     }
 
     protected fun doTailSetTest() {
@@ -71,6 +85,13 @@ abstract class AbstractHeadTailTest {
         for (i in 1..10)
             assertEquals(true, set.contains(i))
 
+        // My tests
+        set = tree.tailSet(-12)
+        assertEquals(tree.size, set.size)
+        assertTrue(set.add(485))
+        assertTrue(tree.contains(485))
+        set = tree.tailSet(11)
+        assertEquals(1, set.size)
     }
 
     protected fun doHeadSetRelationTest() {
@@ -131,6 +152,15 @@ abstract class AbstractHeadTailTest {
         randomValues.forEach { element ->
             assertEquals(element in fromElement until toElement, randomSubset.contains(element))
         }
+
+        // My tests
+        assertThrows<AssertionError> { tree.subSet(4, 3) }
+        val testSet = tree.subSet(1, 7)
+        assertEquals(6, testSet.size)
+        val oldTreeSize = tree.size
+        assertFalse(testSet.add(5))
+        assertEquals(oldTreeSize, tree.size)
+        assertEquals(6, testSet.size)
     }
 
     protected fun doSubSetRelationTest() {

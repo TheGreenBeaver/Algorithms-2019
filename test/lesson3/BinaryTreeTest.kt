@@ -1,6 +1,8 @@
 package lesson3
 
 import org.junit.jupiter.api.Tag
+import org.junit.jupiter.api.assertThrows
+import java.lang.IllegalStateException
 import kotlin.test.Test
 import java.util.*
 import kotlin.test.assertEquals
@@ -82,6 +84,16 @@ class BinaryTreeTest {
                 "After removal of $toRemove from $list binary tree height increased"
             )
         }
+
+        // My tests
+        val bst = create()
+        for (i in 0..20) {
+            bst += 7
+        }
+        assertFalse(bst.remove(12))
+        assertTrue(bst.remove(7))
+        assertEquals(0, bst.size)
+        assertFalse(bst.remove(7))
     }
 
     @Test
@@ -127,6 +139,31 @@ class BinaryTreeTest {
                 )
             }
         }
+
+        // My tests
+        val bst = create()
+        assertThrows<NoSuchElementException> { bst.iterator().next() }
+        bst.add(11)
+        bst.add(11)
+        bst.add(11)
+        var count = 0
+        val iter = bst.iterator()
+        while (iter.hasNext()) {
+            iter.next()
+            count++
+        }
+        assertEquals(1, count)
+        assertFalse(iter.hasNext())
+        bst.add(13)
+        bst.add(14)
+        assertTrue(iter.hasNext())
+        assertEquals(13, iter.next())
+        bst.add(1)
+        assertEquals(14, iter.next())
+        bst.remove(14)
+        assertFalse(iter.hasNext())
+        bst.add(15)
+        assertEquals(15, iter.next())
     }
 
     @Test
@@ -184,6 +221,27 @@ class BinaryTreeTest {
             }
             assertTrue(binarySet.checkInvariant(), "Binary tree invariant is false after tree.iterator().remove()")
         }
+
+        // My tests
+        val bst = create()
+        bst.add(15)
+        bst.add(1)
+        bst.add(3)
+        val iter = bst.iterator()
+        assertThrows<IllegalStateException> { iter.remove() }
+        iter.next()
+        iter.remove()
+        assertFalse(bst.contains(1))
+        bst.remove(3)
+        var count = 0
+        while (iter.hasNext()) {
+            count++
+            iter.next()
+        }
+        assertEquals(0, count)
+        bst.add(16)
+        iter.remove()
+        assertFalse(bst.contains(15))
     }
 
     @Test
