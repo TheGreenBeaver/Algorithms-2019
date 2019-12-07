@@ -1,10 +1,16 @@
 package lesson3
 
+import org.jetbrains.annotations.NotNull
+import java.lang.IllegalStateException
+import java.lang.StringBuilder
+import java.util.ArrayList
+import java.util.NoSuchElementException
+
 class Trie : AbstractMutableSet<String>(), MutableSet<String> {
     override var size: Int = 0
         private set
 
-    private class Node {
+    class Node {
         val children: MutableMap<Char, Node> = linkedMapOf()
     }
 
@@ -61,7 +67,55 @@ class Trie : AbstractMutableSet<String>(), MutableSet<String> {
      * Итератор для префиксного дерева
      * Сложная
      */
+    class TrieIterator constructor(root: Node, private val trie: Trie) : MutableIterator<String> { // TODO: refresh!!!
+        private val words = ArrayList<String>()
+        private var current = 0
+
+        private val stringBuilder = StringBuilder()
+
+        private fun fill(start: MutableMap.MutableEntry<Char, Node>) {
+            if (start.key == 0.toChar()) {
+                words.add(stringBuilder.toString())
+                return
+            }
+            stringBuilder.append(start.key)
+            for (child in start.value.children) {
+                fill(child)
+            }
+            stringBuilder.delete(stringBuilder.length - 1, stringBuilder.length)
+        }
+
+        init {
+            words.clear()
+            if (root.children.isNotEmpty()) {
+                for (rootChild in root.children) {
+                    fill(rootChild)
+                }
+            }
+        }
+
+        override fun hasNext(): Boolean {
+            return current < words.size
+        }
+
+        override fun next(): String {
+            if (hasNext()) {
+                return words[current++]
+            }
+            throw NoSuchElementException()
+        }
+
+        override fun remove() {
+            if (current != 0) {
+                trie.remove(words[current - 1])
+                words.removeAt(current - 1)
+            }
+            throw IllegalStateException()
+        }
+    }
+
+    @NotNull
     override fun iterator(): MutableIterator<String> {
-        TODO()
+        return TrieIterator(root, this)
     }
 }
