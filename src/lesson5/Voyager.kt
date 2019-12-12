@@ -2,7 +2,7 @@ package lesson5
 
 import lesson5.Graph.Vertex
 
-class Path(
+open class Path(
     val vertices: List<Vertex>,
     val length: Int
 ) : Comparable<Path> {

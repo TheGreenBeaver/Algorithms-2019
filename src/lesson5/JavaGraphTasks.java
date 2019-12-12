@@ -1,11 +1,9 @@
 package lesson5;
 
-import kotlin.NotImplementedError;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
-import java.util.concurrent.ArrayBlockingQueue;
 
 @SuppressWarnings("unused")
 public class JavaGraphTasks {
@@ -37,31 +35,25 @@ public class JavaGraphTasks {
      */
     // shouldExist == false means the list is empty
     public static List<Graph.Edge> findEulerLoop(Graph graph) {
-        ArrayList<Graph.Edge> ans = new ArrayList<>(Collections.emptyList());
-        Set<Graph.Edge> edges = graph.getEdges();
-        if (edges.size() >= 3) {
+        List<Graph.Edge> ans = new ArrayList<>();
+        Set<Graph.Edge> notVisited = graph.getEdges();
+        if (notVisited.size() >= 3) {
             Stack<Graph.Vertex> vStack = new Stack<>();
             Stack<Graph.Edge> eStack = new Stack<>();
 
-            vStack.push(edges.iterator().next().getBegin());
-            HashMap<Graph.Edge, Boolean> visited = new HashMap<>();
-            for (Graph.Edge e : edges) {
-                visited.put(e, false);
-            }
+            vStack.push(notVisited.iterator().next().getBegin());
 
             Graph.Vertex v;
-            int visitedAmount = 0;
             while (!vStack.isEmpty()) {
                 v = vStack.peek();
                 Map<Graph.Vertex, Graph.Edge> connections = graph.getConnections(v);
 
                 for (Map.Entry<Graph.Vertex, Graph.Edge> e : connections.entrySet()) {
                     Graph.Edge edge = e.getValue();
-                    if (!visited.get(edge)) {
-                        visited.put(edge, true);
+                    if (notVisited.contains(edge)) {
+                        notVisited.remove(edge);
                         vStack.push(e.getKey());
                         eStack.push(edge);
-                        visitedAmount++;
                         break;
                     }
                 }
@@ -79,7 +71,7 @@ public class JavaGraphTasks {
                 }
             }
 
-            if (visitedAmount != edges.size() || !connected(ans.get(0), ans.get(ans.size() - 1))) {
+            if (!notVisited.isEmpty() || !connected(ans.get(0), ans.get(ans.size() - 1))) {
                 ans.clear();
             }
         }
@@ -94,6 +86,10 @@ public class JavaGraphTasks {
 
         return fB.equals(sB) || fB.equals(sE) || fE.equals(sE) || fE.equals(sB);
     }
+
+    // Сложность алгоритма: O(graph.getEdges().size())
+
+    // Оценка ресурсоёмкости: O(graph.getEdges().size() + graph.getVertices().size())
 
     /**
      * Минимальное остовное дерево.
@@ -125,38 +121,32 @@ public class JavaGraphTasks {
      */
     public static Graph minimumSpanningTree(Graph graph) {
         Set<Graph.Edge> necessaryEdges = new HashSet<>();
-        Set<Graph.Vertex> vertices = graph.getVertices();
-        int visitedAmount = 1;
-        HashMap<Graph.Vertex, Boolean> visited = new HashMap<>();
-        if (!vertices.isEmpty()) {
+        Set<Graph.Vertex> notVisited = graph.getVertices();
+        if (!notVisited.isEmpty()) {
             Graph.Vertex start = graph.getEdges().iterator().next().getBegin();
-            for (Graph.Vertex v: vertices) {
-                visited.put(v, v.equals(start));
-            }
-            ArrayBlockingQueue<Graph.Vertex> vQueue = new ArrayBlockingQueue<>(vertices.size());
+            Queue<Graph.Vertex> vQueue = new ArrayDeque<>(notVisited.size());
             vQueue.add(start);
             while (!vQueue.isEmpty()) {
                 Graph.Vertex current = vQueue.poll();
                 Map<Graph.Vertex, Graph.Edge> connections = graph.getConnections(current);
                 Set<Graph.Vertex> neighbours = connections.keySet();
                 for (Graph.Vertex n : neighbours) {
-                    if (!visited.get(n)) {
+                    if (notVisited.contains(n)) {
                         vQueue.add(n);
                         necessaryEdges.add(connections.get(n));
-                        visited.put(n, true);
-                        visitedAmount++;
+                        notVisited.remove(n);
                     }
                 }
             }
         }
-        if (visitedAmount != visited.size()) {
+        if (!notVisited.isEmpty()) {
             necessaryEdges.clear();
         }
         return new Graph() {
             @NotNull
             @Override
             public Set<Vertex> getVertices() {
-                return vertices;
+                return graph.getVertices();
             }
 
             @NotNull
@@ -168,7 +158,7 @@ public class JavaGraphTasks {
             @Nullable
             @Override
             public Vertex get(String name) {
-                for (Vertex v : vertices) {
+                for (Vertex v : graph.getVertices()) {
                     if (v.getName().equals(name)) {
                         return v;
                     }
@@ -191,6 +181,11 @@ public class JavaGraphTasks {
             }
         };
     }
+
+    // Сложность алгоритма: аналогична таковой для bfs, т.е. O(graph.getEdges().size() + graph.getVertices().size())
+
+    // Оценка ресурсоёмкости: O(graph.getVertices().size())
+
 
     /**
      * Максимальное независимое множество вершин в графе без циклов.
@@ -219,27 +214,16 @@ public class JavaGraphTasks {
      * Эта задача может быть зачтена за пятый и шестой урок одновременно
      */
     public static Set<Graph.Vertex> largestIndependentVertexSet(Graph graph) {
-        iSets = new HashMap<>();
-        Set<Graph.Vertex> vertices = graph.getVertices();
-        if (vertices.isEmpty()) {
+        Map<Graph.Vertex, Set<Graph.Vertex>> iSets = new HashMap<>();
+        Set<Graph.Vertex> notVisited = graph.getVertices();
+        if (notVisited.isEmpty()) {
             return Collections.emptySet();
         }
-        HashMap<Graph.Vertex, Boolean> visited = new HashMap<>();
-        for (Graph.Vertex v : vertices) {
-            visited.put(v, false);
-        }
-        passed = 0;
         Set<Graph.Vertex> ans = new HashSet<>();
-        while (passed != vertices.size()) {
-            Graph.Vertex start = null;
-            for (Graph.Vertex v : vertices) {
-                if (!visited.get(v)) {
-                    start = v;
-                    break;
-                }
-            }
-            if (dfs(graph, start, visited)) {
-                ans.addAll(independentSet(graph, start, null));
+        while (!notVisited.isEmpty()) {
+            Graph.Vertex start = notVisited.iterator().next();
+            if (dfs(graph, start, notVisited)) {
+                ans.addAll(independentSet(graph, start, null, iSets));
             } else {
                 throw new IllegalArgumentException();
             }
@@ -247,29 +231,27 @@ public class JavaGraphTasks {
         return ans;
     }
 
-    private static int passed;
-
-    private static boolean dfs(Graph graph, Graph.Vertex current, HashMap<Graph.Vertex, Boolean> visited) {
-        visited.put(current, true);
-        passed++;
+    private static boolean dfs(Graph graph, Graph.Vertex current, Set<Graph.Vertex> notVisited) {
+        notVisited.remove(current);
         Set<Graph.Vertex> neighbours = graph.getNeighbors(current);
         int visitedAmount = 0;
         for (Graph.Vertex n : neighbours) {
-            if (visited.get(n) && visitedAmount++ > 1) {
+            if (!notVisited.contains(n) && visitedAmount++ > 1) {
                 return false;
             }
         }
         for (Graph.Vertex n : neighbours) {
-            if (!visited.get(n)) {
-                return dfs(graph, n, visited);
+            if (notVisited.contains(n)) {
+                return dfs(graph, n, notVisited);
             }
         }
         return true;
     }
 
-    private static HashMap<Graph.Vertex, Set<Graph.Vertex>> iSets;
-
-    private static Set<Graph.Vertex> independentSet(Graph graph, Graph.Vertex vertex, Graph.Vertex parent) {
+    private static Set<Graph.Vertex> independentSet(Graph graph,
+                                                    Graph.Vertex vertex,
+                                                    Graph.Vertex parent,
+                                                    Map<Graph.Vertex, Set<Graph.Vertex>> iSets) {
         if (iSets.get(vertex) != null) {
             return iSets.get(vertex);
         }
@@ -285,11 +267,11 @@ public class JavaGraphTasks {
             Set<Graph.Vertex> c = graph.getNeighbors(child);
             c.remove(vertex);
             grandChildren.put(child, c);
-            childrenSum.addAll(independentSet(graph, child, vertex));
+            childrenSum.addAll(independentSet(graph, child, vertex, iSets));
         }
         for (Map.Entry<Graph.Vertex, Set<Graph.Vertex>> grandChild : grandChildren.entrySet()) {
             for (Graph.Vertex gcv : grandChild.getValue()) {
-                gChildrenSum.addAll(independentSet(graph, gcv, grandChild.getKey()));
+                gChildrenSum.addAll(independentSet(graph, gcv, grandChild.getKey(), iSets));
             }
         }
         Set<Graph.Vertex> res;
@@ -303,6 +285,10 @@ public class JavaGraphTasks {
         }
         return res;
     }
+
+    // Сложность алгоритма: O(graph.getEdges().size() + graph.getVertices().size())
+
+    // Оценка ресурсоёмкости: O(graph.getVertices().size()^2)
 
     /**
      * Наидлиннейший простой путь.
@@ -325,56 +311,44 @@ public class JavaGraphTasks {
      * Ответ: A, E, J, K, D, C, H, G, B, F, I
      */
     public static Path longestSimplePath(Graph graph) {
-//        path = new ArrayList<>();
-//
-//        Set<Graph.Vertex> connectedVertices = new HashSet<>();
-//        Set<Graph.Edge> allEdges = graph.getEdges();
-//        for (Graph.Edge e : allEdges) {
-//            connectedVertices.add(e.getBegin());
-//            connectedVertices.add(e.getEnd());
-//        }
-//        visited = new HashMap<>();
-//        for (Graph.Vertex v : connectedVertices) {
-//            visited.put(v, false);
-//        }
-//        int visitedAmount = 0;
-//        while (visitedAmount != connectedVertices.size()) {
-//            Graph.Vertex start = null;
-//            for (Graph.Vertex v : connectedVertices) {
-//                if (!visited.get(v)) {
-//                    start = v;
-//                    break;
-//                }
-//            }
-//            currentPath.clear();
-//            last = null;
-//            dfs(graph, start);
-//        }
-//        return new Path(path, path.size());
-        throw new NotImplementedError();
+        Set<Graph.Vertex> notVisitedL = graph.getVertices();
+        Set<Graph.Vertex> notVisitedG = graph.getVertices();
+        if (notVisitedL.isEmpty()) {
+            return new Path();
+        } else {
+            List<Graph.Vertex> ans = new ArrayList<>();
+            while (!notVisitedG.isEmpty()) {
+                Graph.Vertex start = notVisitedG.iterator().next();
+                Stack<Graph.Vertex> lRes = new Stack<>();
+                pathDFS(graph, start, notVisitedL, notVisitedG, lRes, ans);
+            }
+            return new Path(ans, ans.size() - 1);
+        }
     }
 
-//    private static Stack<Graph.Vertex> currentPath = new Stack<>();
-//    private static List<Graph.Vertex> path;
-//    private static HashMap<Graph.Vertex, Boolean> visited;
-//    private static Graph.Vertex last;
-//
-//    private static void dfs(Graph graph,
-//                     Graph.Vertex current
-//                     ) {
-//        currentPath.push(current);
-//        visited.put(current, true);
-//        Set<Graph.Vertex> neighbours = graph.getNeighbors(current);
-//        for (Graph.Vertex n : neighbours) {
-//            if (!visited.get(n) && !n.equals(last)) {
-//                last = null;
-//                dfs(graph, n);
-//            }
-//        }
-//        if (path.size() < currentPath.size()) {
-//            path = new ArrayList<>(currentPath);
-//        }
-//        last = current;
-//        visited.put(currentPath.pop(), false);
-//    }
+    private static void pathDFS(Graph graph,
+                                Graph.Vertex current,
+                                Set<Graph.Vertex> notVisitedL,
+                                Set<Graph.Vertex> notVisitedG,
+                                Stack<Graph.Vertex> path,
+                                List<Graph.Vertex> result) {
+        notVisitedL.remove(current);
+        notVisitedG.remove(current);
+        path.push(current);
+        for (Graph.Vertex v : graph.getNeighbors(current)) {
+            if (notVisitedL.contains(v)) {
+                pathDFS(graph, v, notVisitedL, notVisitedG, path, result);
+            }
+        }
+        if (path.size() > result.size()) {
+            result.clear();
+            result.addAll(path);
+        }
+        notVisitedL.add(current);
+        path.pop();
+    }
 }
+
+// Сложность алгоритма: O(graph.getEdges().size() + graph.getVertices().size())
+
+// Оценка ресурсоёмкости: O(graph.getVertices().size()) (рекурсия)
